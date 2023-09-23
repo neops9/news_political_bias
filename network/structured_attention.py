@@ -302,7 +302,6 @@ class StructuredAttentionModule(nn.Module):
         # Update semantic vectors with structured attention (see eq. (16) Liu&Lapata)
         struct_scores_p = torch.transpose(struct_scores_with_root.detach().clone(), 1, 2) # soft parent
 
-        # TODO: how the sum is done here ?
         # Compute context vector gathered from possible parents
         # p_i = sum_{k=0}{n} (a_ki*e_k) +  a_i^r * e_root 
         # (e_root is a special embedding for the root node)

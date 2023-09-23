@@ -22,8 +22,8 @@ def load_embeddings(dir):
     return data, word_to_id, id_to_word, n_embs
 
 
-# Write baly data to pkl for one section
-def write_baly_data(in_path, split_path, section, output_path):
+# Write data to pkl for one section
+def write_data(in_path, split_path, section, output_path):
     doclst = []
     filenames = pd.read_csv(split_path, sep='\t')
     n_filtered = 0
