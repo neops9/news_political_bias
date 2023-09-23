@@ -27,7 +27,8 @@ def from_pretrained(args, embeddings_table, unk_idx, n_sources):
     model.load_state_dict(model_state)
     model.to(device=args.device)
     return model, checkpoint['epoch']
-        
+     
+   
 # Read command line
 cmd = argparse.ArgumentParser()
 cmd.add_argument("--data", type=str, required=True, help="Path to training data folder")

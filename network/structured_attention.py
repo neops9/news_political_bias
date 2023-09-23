@@ -5,7 +5,6 @@ import numpy as np
 import itertools
 import torch.nn.functional as F
 from torch.autograd import Function
-import network.special_tokens
 
 class SequenceDropout(nn.Module):
     def __init__(self, p, broadcast_batch=False, broadcast_segment=False, broadcast_word=False):
@@ -61,22 +60,6 @@ class BiLSTM(nn.Module):
         return sent_output_padded, hidden
 
 
-class SpecialEmbeddingsNetwork(nn.Module):
-    def __init__(self, size):
-        super(SpecialEmbeddingsNetwork, self).__init__()
-        self.size = size
-
-        self.dict = network.special_tokens.Dict()
-        self.embs = nn.Embedding(len(self.dict)+1, self.size, padding_idx=len(self.dict)) 
-
-        print("Special word embeddings size: %i" % size)
-        print(flush=True)
-
-    def forward(self, inputs):
-        values = self.embs(inputs)
-        return values
-
-
 class Glove(torch.nn.Module):
     def __init__(self, args, embedding_table, word_padding_idx):
         super().__init__()
@@ -86,8 +69,6 @@ class Glove(torch.nn.Module):
         # Freeze words embs
         self.embs.weight.requires_grad=args.train_embs
         
-        self.special_embs = SpecialEmbeddingsNetwork(args.word_embs_dim)
-        self.n_unk = len(network.special_tokens.Dict())
         self.add_context = args.add_context
         self.output_dim = args.word_embs_dim
 
@@ -100,8 +81,7 @@ class Glove(torch.nn.Module):
         cmd.add_argument('--train-embs', action="store_true", help="Train embeddings")
 
     def forward(self, inputs):
-        # REMETTRE SPECIAL EMBEDDINGS
-        repr_list = [self.embs(inputs["token_idxs"])]# + self.special_embs(inputs["special_words_idxs"])]
+        repr_list = [self.embs(inputs["token_idxs"])]
 
         if len(repr_list) == 1:
             ret = repr_list[0]
@@ -353,8 +333,7 @@ class Network(nn.Module):
 
         # Skip structured attention 
         self.skip_struct_linear = nn.Linear((2 * self.lstm_hidden_dim), 2 * self.sem_dim, bias=True)
-        self.skip_struct_activation = nn.LeakyReLU(negative_slope=0.01)
-        #self.skip_struct_activation = nn.Tanh()
+        self.skip_struct_activation = nn.Tanh()
 
         # Final output
         if self.skip_structured_attention:    
@@ -364,8 +343,7 @@ class Network(nn.Module):
 
         self.final_output = nn.Sequential(
             nn.Linear(dim_tmp, args.proj_dim, bias=True),
-            nn.LeakyReLU(negative_slope=0.01),
-            #nn.Tanh(),
+            nn.Tanh(),
             nn.Dropout(p=args.proj_dropout),
             nn.Linear(args.proj_dim, args.dim_output, bias=True)
         )
@@ -373,10 +351,8 @@ class Network(nn.Module):
         # Domain Adaptation
         if self.dann:
             self.dann_output = nn.Sequential(
-                #nn.Linear(dim_tmp, args.proj_dim, bias=True),
                 nn.Linear(2*self.lstm_hidden_dim, args.proj_dim, bias=True),
-                nn.LeakyReLU(negative_slope=0.01),
-                #nn.Tanh(),
+                nn.Tanh(),
                 nn.Dropout(p=args.proj_dropout),
                 nn.Linear(args.proj_dim, n_sources, bias=True)
             )
@@ -438,6 +414,9 @@ class Network(nn.Module):
             encoded_documents, documents_attention_scores_with_root = self.documents_structured_attention(encoded_segments, torch.flatten(doc_l), dependencies, masked_dependencies)
             self.documents_attention_scores_with_root = documents_attention_scores_with_root
 
+            # weighted sum based on root scores
+	    temp = documents_attention_scores_with_root[:,0,:].unsqueeze(2).repeat(1, 1, encoded_documents.shape[2])
+	    encoded_documents = encoded_documents * temp
             encoded_documents = encoded_documents.sum(dim=1)
             encoded_documents = torch.div(encoded_documents, doc_l.unsqueeze(1))            
         else:
