@@ -8,9 +8,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from network import structured_attention
-from network.data import load_fasttext_embeddings, load_embeddings, read_data, read_data_belelect, read_data_title_only, get_input_dict
+from network.data import load_embeddings, read_data, get_input_dict
 from network.batch import StandardBatchIterator
-import network.special_tokens
 
 def save_checkpoint(state, is_best, path, filename='checkpoint.pth.tar'):
     torch.save(state, path + filename)
