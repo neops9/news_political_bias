@@ -22,7 +22,7 @@ We used pretrained 300D GloVe vector embeddings (https://nlp.stanford.edu/projec
 
 ### Preprocessing
 
-All articles must first be segmented into EDUs using the [disCut](https://gitlab.irit.fr/melodi/andiamo/discoursesegmentation/discut22) discourse segmenter.
+**(!)** All articles must first be segmented into EDUs using the [disCut](https://gitlab.irit.fr/melodi/andiamo/discoursesegmentation/discut22) discourse segmenter.
 
 Articles must then be stored in ```./data/``` folder in JSON format with the following structure for each article:
 
